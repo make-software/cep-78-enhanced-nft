@@ -109,6 +109,16 @@ pub enum NFTCoreError {
     ForbiddenMetadataUpdate = 104,
     MissingBurnMode = 105,
     InvalidBurnMode = 106,
+    InvalidTokenEvent = 107,
+    MissingTokenEventId = 108,
+    InvalidTokenEventId = 109,
+    InvalidTokenEventOrder = 110,
+    FailedToEmitMintEvent = 111,
+    FailedToEmitBurnedEvent = 112,
+    FailedToEmitApproveEvent = 113,
+    FailedToEmitTransferEvent = 114,
+    InvalidStartingEventId = 115,
+    InvalidLastEventId = 116,
 }
 
 impl From<NFTCoreError> for ApiError {

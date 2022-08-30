@@ -1,8 +1,11 @@
+
+
 pub(crate) const NFT_CONTRACT_WASM: &str = "contract.wasm";
 pub(crate) const MINT_SESSION_WASM: &str = "mint_call.wasm";
 pub(crate) const BALANCE_OF_SESSION_WASM: &str = "balance_of_call.wasm";
 pub(crate) const MINTING_CONTRACT_WASM: &str = "minting_contract.wasm";
 pub(crate) const TRANSFER_SESSION_WASM: &str = "transfer_call.wasm";
+pub(crate) const GET_TOKEN_EVENTS_WASM: &str = "get_events_call.wasm";
 pub(crate) const CONTRACT_NAME: &str = "nft_contract";
 pub(crate) const MINTING_CONTRACT_NAME: &str = "minting_contract_hash";
 pub(crate) const NFT_TEST_COLLECTION: &str = "nft_test";
@@ -47,6 +50,8 @@ pub(crate) const BURNT_TOKENS: &str = "burnt_tokens";
 pub(crate) const OPERATOR: &str = "operator";
 pub(crate) const BALANCES: &str = "balances";
 pub(crate) const RECEIPT_NAME: &str = "receipt_name";
+pub(crate) const EVENTS: &str = "events";
+pub(crate) const EVENT_ID_TRACKER: &str = "id_tracker";
 pub(crate) const ARG_OPERATOR: &str = "operator";
 pub(crate) const ARG_TARGET_KEY: &str = "target_key";
 pub(crate) const ARG_SOURCE_KEY: &str = "source_key";
@@ -54,9 +59,12 @@ pub(crate) const ARG_TOKEN_ID: &str = "token_id";
 pub(crate) const ARG_TOKEN_HASH: &str = "token_hash";
 pub(crate) const ARG_KEY_NAME: &str = "key_name";
 pub(crate) const ARG_IS_HASH_IDENTIFIER_MODE: &str = "is_hash_identifier_mode";
+pub(crate) const ARG_STARTING_EVENT_ID: &str = "starting_event_id";
+pub(crate) const ARG_ALL_EVENTS: &str = "all_events";
+pub(crate) const ARG_LAST_EVENT_ID: &str = "last_event_id";
 pub(crate) const ACCOUNT_USER_1: [u8; 32] = [1u8; 32];
 pub(crate) const ACCOUNT_USER_2: [u8; 32] = [2u8; 32];
-pub(crate) const ACCOUNT_USER_3: [u8; 32] = [2u8; 32];
+pub(crate) const ACCOUNT_USER_3: [u8; 32] = [3u8; 32];
 pub(crate) const TEST_PRETTY_721_META_DATA: &str = r#"{
   "name": "John Doe",
   "symbol": "abc",

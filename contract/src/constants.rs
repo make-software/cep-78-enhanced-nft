@@ -22,6 +22,8 @@ pub const ARG_NFT_METADATA_KIND: &str = "nft_metadata_kind";
 pub const ARG_IDENTIFIER_MODE: &str = "identifier_mode";
 pub const ARG_METADATA_MUTABILITY: &str = "metadata_mutability";
 pub const ARG_BURN_MODE: &str = "burn_mode";
+pub const ARG_STARTING_EVENT_ID: &str = "starting_event_id";
+pub const ARG_LAST_EVENT_ID: &str = "last_event_id";
 
 pub const OPERATOR: &str = "operator";
 pub const NUMBER_OF_MINTED_TOKENS: &str = "number_of_minted_tokens";
@@ -56,6 +58,9 @@ pub const METADATA_CUSTOM_VALIDATED: &str = "metadata_custom_validated";
 pub const METADATA_CEP78: &str = "metadata_cep78";
 pub const METADATA_NFT721: &str = "metadata_nft721";
 pub const METADATA_RAW: &str = "metadata_raw";
+pub const EVENTS: &str = "events";
+pub const EVENT_ID_TRACKER: &str = "id_tracker";
+
 pub const ENTRY_POINT_INIT: &str = "init";
 pub const ENTRY_POINT_SET_VARIABLES: &str = "set_variables";
 pub const ENTRY_POINT_MINT: &str = "mint";
@@ -68,3 +73,4 @@ pub const ENTRY_POINT_GET_APPROVED: &str = "get_approved";
 pub const ENTRY_POINT_METADATA: &str = "metadata";
 pub const ENTRY_POINT_SET_APPROVE_FOR_ALL: &str = "set_approval_for_all";
 pub const ENTRY_POINT_SET_TOKEN_METADATA: &str = "set_token_metadata";
+pub const ENTRY_POINT_GET_TOKEN_EVENTS: &str = "get_token_events";

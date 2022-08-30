@@ -6,6 +6,7 @@ compile_error!("target arch should be wasm32: compile with '--target wasm32-unkn
 
 mod constants;
 mod error;
+mod events;
 mod metadata;
 mod modalities;
 mod utils;
@@ -39,15 +40,16 @@ use crate::{
     constants::{
         ACCESS_KEY_NAME, ALLOW_MINTING, ARG_ALLOW_MINTING, ARG_APPROVE_ALL, ARG_BURN_MODE,
         ARG_COLLECTION_NAME, ARG_COLLECTION_SYMBOL, ARG_CONTRACT_WHITELIST, ARG_HOLDER_MODE,
-        ARG_IDENTIFIER_MODE, ARG_JSON_SCHEMA, ARG_METADATA_MUTABILITY, ARG_MINTING_MODE,
-        ARG_NFT_KIND, ARG_NFT_METADATA_KIND, ARG_OPERATOR, ARG_OWNERSHIP_MODE, ARG_RECEIPT_NAME,
-        ARG_SOURCE_KEY, ARG_TARGET_KEY, ARG_TOKEN_META_DATA, ARG_TOKEN_OWNER,
-        ARG_TOTAL_TOKEN_SUPPLY, ARG_WHITELIST_MODE, BURNT_TOKENS, BURN_MODE, COLLECTION_NAME,
-        COLLECTION_SYMBOL, CONTRACT_NAME, CONTRACT_VERSION, CONTRACT_WHITELIST,
-        ENTRY_POINT_APPROVE, ENTRY_POINT_BALANCE_OF, ENTRY_POINT_BURN, ENTRY_POINT_GET_APPROVED,
-        ENTRY_POINT_INIT, ENTRY_POINT_METADATA, ENTRY_POINT_MINT, ENTRY_POINT_OWNER_OF,
-        ENTRY_POINT_SET_APPROVE_FOR_ALL, ENTRY_POINT_SET_TOKEN_METADATA, ENTRY_POINT_SET_VARIABLES,
-        ENTRY_POINT_TRANSFER, HASH_KEY_NAME, HOLDER_MODE, IDENTIFIER_MODE, INSTALLER, JSON_SCHEMA,
+        ARG_IDENTIFIER_MODE, ARG_JSON_SCHEMA, ARG_LAST_EVENT_ID, ARG_METADATA_MUTABILITY,
+        ARG_MINTING_MODE, ARG_NFT_KIND, ARG_NFT_METADATA_KIND, ARG_OPERATOR, ARG_OWNERSHIP_MODE,
+        ARG_RECEIPT_NAME, ARG_SOURCE_KEY, ARG_STARTING_EVENT_ID, ARG_TARGET_KEY,
+        ARG_TOKEN_META_DATA, ARG_TOKEN_OWNER, ARG_TOTAL_TOKEN_SUPPLY, ARG_WHITELIST_MODE,
+        BURNT_TOKENS, BURN_MODE, COLLECTION_NAME, COLLECTION_SYMBOL, CONTRACT_NAME,
+        CONTRACT_VERSION, CONTRACT_WHITELIST, ENTRY_POINT_APPROVE, ENTRY_POINT_BALANCE_OF,
+        ENTRY_POINT_BURN, ENTRY_POINT_GET_APPROVED, ENTRY_POINT_INIT, ENTRY_POINT_METADATA,
+        ENTRY_POINT_MINT, ENTRY_POINT_OWNER_OF, ENTRY_POINT_SET_APPROVE_FOR_ALL,
+        ENTRY_POINT_SET_TOKEN_METADATA, ENTRY_POINT_SET_VARIABLES, ENTRY_POINT_TRANSFER, EVENTS,
+        EVENT_ID_TRACKER, HASH_KEY_NAME, HOLDER_MODE, IDENTIFIER_MODE, INSTALLER, JSON_SCHEMA,
         METADATA_CEP78, METADATA_CUSTOM_VALIDATED, METADATA_MUTABILITY, METADATA_NFT721,
         METADATA_RAW, METADATA_SCHEMA, MINTING_MODE, NFT_KIND, NFT_METADATA_KIND,
         NUMBER_OF_MINTED_TOKENS, OPERATOR, OWNED_TOKENS, OWNERSHIP_MODE, RECEIPT_NAME,
@@ -60,6 +62,7 @@ use crate::{
         NFTMetadataKind, OwnershipMode, TokenIdentifier, WhitelistMode,
     },
 };
+use crate::constants::ENTRY_POINT_GET_TOKEN_EVENTS;
 
 #[no_mangle]
 pub extern "C" fn init() {
@@ -298,6 +301,9 @@ pub extern "C" fn init() {
     storage::new_dictionary(METADATA_NFT721)
         .unwrap_or_revert_with(NFTCoreError::FailedToCreateDictionary);
     storage::new_dictionary(METADATA_RAW)
+        .unwrap_or_revert_with(NFTCoreError::FailedToCreateDictionary);
+    storage::new_dictionary(EVENTS).unwrap_or_revert_with(NFTCoreError::FailedToCreateDictionary);
+    storage::new_dictionary(EVENT_ID_TRACKER)
         .unwrap_or_revert_with(NFTCoreError::FailedToCreateDictionary);
 }
 
@@ -619,6 +625,8 @@ pub extern "C" fn mint() {
         token_identifier_string,
     ))
     .unwrap_or_revert_with(NFTCoreError::FailedToConvertToCLValue);
+    events::emit_minted_event(token_identifier)
+        .unwrap_or_revert_with(NFTCoreError::FailedToEmitMintEvent);
     runtime::ret(receipt)
 }
 
@@ -688,6 +696,8 @@ pub extern "C" fn burn() {
         };
 
     utils::upsert_dictionary_value_from_key(TOKEN_COUNTS, &owned_tokens_item_key, updated_balance);
+    events::emit_burn_event(token_identifier)
+        .unwrap_or_revert_with(NFTCoreError::FailedToEmitBurnedEvent)
 }
 
 // approve marks a token as approved for transfer by an account
@@ -770,6 +780,8 @@ pub extern "C" fn approve() {
         &token_identifier_dictionary_key,
         Some(operator),
     );
+    events::emit_approve_event(token_identifier)
+        .unwrap_or_revert_with(NFTCoreError::FailedToEmitApproveEvent)
 }
 
 // Approves the specified operator for transfer token_owner's tokens.
@@ -852,6 +864,8 @@ pub extern "C" fn set_approval_for_all() {
                     &token_id.get_dictionary_item_key(),
                     Some(operator),
                 );
+                events::emit_approve_event(token_id)
+                    .unwrap_or_revert_with(NFTCoreError::FailedToEmitApproveEvent)
             } else {
                 storage::dictionary_put(
                     approved_uref,
@@ -1050,6 +1064,8 @@ pub extern "C" fn transfer() {
 
     let receipt = CLValue::from_t((receipt_name, owned_tokens_actual_key))
         .unwrap_or_revert_with(NFTCoreError::FailedToConvertToCLValue);
+    events::emit_transfer_event(token_identifier)
+        .unwrap_or_revert_with(NFTCoreError::FailedToEmitTransferEvent);
     runtime::ret(receipt)
 }
 
@@ -1271,6 +1287,36 @@ pub extern "C" fn set_token_metadata() {
     );
 }
 
+#[no_mangle]
+pub extern "C" fn get_token_events() {
+    let identifier_mode: NFTIdentifierMode = utils::get_stored_value_with_user_errors::<u8>(
+        IDENTIFIER_MODE,
+        NFTCoreError::MissingIdentifierMode,
+        NFTCoreError::InvalidIdentifierMode,
+    )
+    .try_into()
+    .unwrap_or_revert();
+    let token_identifier = utils::get_token_identifier_from_runtime_args(&identifier_mode);
+    let starting_event_id = utils::get_optional_named_arg_with_user_errors::<u64>(
+        ARG_STARTING_EVENT_ID,
+        NFTCoreError::InvalidStartingEventId,
+    )
+    .unwrap_or(0u64);
+    let maybe_final_event_id = utils::get_optional_named_arg_with_user_errors::<u64>(
+        ARG_LAST_EVENT_ID,
+        NFTCoreError::InvalidLastEventId,
+    );
+    let events = events::get_events(token_identifier, starting_event_id, maybe_final_event_id);
+    let receipt_name = utils::get_stored_value_with_user_errors::<String>(
+        RECEIPT_NAME,
+        NFTCoreError::MissingReceiptName,
+        NFTCoreError::InvalidReceiptName,
+    );
+    runtime::ret(
+        CLValue::from_t((format!("events-{}", receipt_name), events)).unwrap_or_revert_with(NFTCoreError::FailedToConvertToCLValue),
+    )
+}
+
 fn install_nft_contract() -> (ContractHash, ContractVersion) {
     let entry_points = {
         let mut entry_points = EntryPoints::new();
@@ -1457,6 +1503,14 @@ fn install_nft_contract() -> (ContractHash, ContractVersion) {
             EntryPointType::Contract,
         );
 
+        let get_token_events = EntryPoint::new(
+            ENTRY_POINT_GET_TOKEN_EVENTS,
+            vec![],
+            CLType::List(Box::new(CLType::String)),
+            EntryPointAccess::Public,
+            EntryPointType::Contract
+        );
+
         entry_points.add_entry_point(init_contract);
         entry_points.add_entry_point(set_variables);
         entry_points.add_entry_point(mint);
@@ -1469,6 +1523,7 @@ fn install_nft_contract() -> (ContractHash, ContractVersion) {
         entry_points.add_entry_point(metadata);
         entry_points.add_entry_point(set_approval_for_all);
         entry_points.add_entry_point(set_token_metadata);
+        entry_points.add_entry_point(get_token_events);
         entry_points
     };
 

@@ -22,6 +22,10 @@ mod transfer;
 // around updating metadata.
 #[cfg(test)]
 mod metadata;
+// A collection of tests that are focused
+// around token events.
+#[cfg(test)]
+mod events;
 
 // A collection of helper methods and constants.
 #[cfg(test)]
