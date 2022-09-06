@@ -15,11 +15,13 @@
 
 1) [Modalities](#modalities)
 
-2) [Usage](#usage)
+2) [Requirements & Dependencies](#requirements-&-dependencies)
 
-3) [Installing and Interacting with the Contract using the Rust Casper Client](#installing-and-interacting-with-the-contract-using-the-rust-casper-client)
+3) [Usage](#usage)
 
-4) [Test Suite and Specification](#test-suite-and-specification)
+4) [Installing and Interacting with the Contract using the Rust Casper Client](#installing-and-interacting-with-the-contract-using-the-rust-casper-client)
+
+5) [Test Suite and Specification](#test-suite-and-specification)
 
 ## Modalities
 
@@ -246,13 +248,26 @@ mode cannot be changed once the contract has been installed. The mode is set by 
 The `MetadataMutability` option of `Mutable` cannot be used in conjunction with `NFTIdentifierMode` modality of `Hash`.
 
 
+### Requirements & Dependencies
+- Please see Casper's rust development prerequisites [here](https://docs.casperlabs.io/dapp-dev-guide/writing-contracts/getting-started/#prerequisites).
+- rust version N.N 
+- wasm-strip : part of the [The WebAssembly Binary Toolkit (WABT)](https://github.com/WebAssembly/wabt)
+    - Note, additional dependency for [cmake](https://cmake.org)
+
+Like all other Casper smart contracts, the CEP-78 rust contract is compiled to WebAssembly (Wasm), an open standard for performance and portability of modern web applications. You can learn more about the WebAssembly project [here](https://webassembly.org).
+
 ### Usage
 
 #### Installing the contract.
 
-The `main.rs` file within the contract provides the installer for the NFT contract. Users can compile the contract to Wasm using the `make build-contract` with the provided Makefile.
+The `main.rs` file within the contract provides the installer for the NFT contract. Users wishing to build the Wasm themselves can pull the code and compile the contract to Wasm using the provided Makefile.
 
-The pre-built Wasm for the contract and all other utility session code can be found as part of the most current release. Users wishing to build the Wasm themselves can pull the code and the `make build-contract` provided in the included Makefile. Please note, however, that as part of building the contract, you will need to install `wasm-strip`.
+- `make prepare`
+- `make build-contract`
+
+(Please note, however, that as part of building the contract, you will need to install `wasm-strip`).
+
+Alternatively, as a convenience, there is pre-built Wasm for the contract and all other utility session code, which can be found as part of the most current release.
 
 The `call` method will install the contract with the necessary entry points and call `init()` entry point to allow the contract to self initialize and setup the necessary state to allow for operation,
 The following are the required runtime arguments that must be passed to the installer session code to correctly install the NFT contract.
@@ -274,7 +289,7 @@ The following are the optional parameters that can be passed in at the time of i
 * `"allow_minting"`: The `"allow_minting"` flag allows the installer of the contract to pause the minting of new NFTs. The `allow_minting` is a boolean toggle that allows minting when `true`. If not provided at install the toggle will default to `true`. This value can be changed by the installer by calling the `set_variables()` entry point.
 * `"whitelist_mode"`: The [`WhitelistMode`](#whitelistmode) modality dictates whether the contract whitelist can be updated. This optional parameter will default to an unlocked whitelist that can be updated post installation. This parameter cannot be changed once the contract has been installed.
 * `"holder_mode"`: The [`NFTHolderMode`](#nftholdermode) modality dictates which entities can hold NFTs. This is an optional parameter and will default to a mixed mode allowing either `Accounts` or `Contracts` to hold NFTs. This parameter cannot be changed once the contract has been installed.
-* `"contract_whitelist"`: The contract whitelist is a list of contract hashes that specifies which contracts can call the `mint()` entrypoint to mint NFTs. This is an optional parameter which will default to an empty whitelist. This value can be changed via the `set_variables` post installation. If the whitelist mode is set to locked, a non-empty whitelist must be passed; else, installation of the contract will fail.
+* `"contract_whitelis09t"`: The contract whitelist is a list of contract hashes that specifies which contracts can call the `mint()` entrypoint to mint NFTs. This is an optional parameter which will default to an empty whitelist. This value can be changed via the `set_variables` post installation. If the whitelist mode is set to locked, a non-empty whitelist must be passed; else, installation of the contract will fail.
 * `"burn_mode"`: The [`BurnMode`](#burnmode) modality dictates whether minted NFTs can be burnt. This is an optional parameter and will allow tokens to be burnt by default. This parameter cannot be changed once the contract has been installed.
 
 ##### Example deploy
