@@ -62,7 +62,7 @@ use crate::{
         NFTMetadataKind, OwnershipMode, TokenIdentifier, WhitelistMode,
     },
 };
-use crate::constants::ENTRY_POINT_GET_TOKEN_EVENTS;
+use crate::constants::{ENTRY_POINT_GET_LATEST_TOKEN_EVENT, ENTRY_POINT_GET_TOKEN_EVENTS};
 
 #[no_mangle]
 pub extern "C" fn init() {
@@ -1317,6 +1317,25 @@ pub extern "C" fn get_token_events() {
     )
 }
 
+#[no_mangle]
+pub extern "C" fn get_latest_token_event() {
+    let identifier_mode: NFTIdentifierMode = utils::get_stored_value_with_user_errors::<u8>(
+        IDENTIFIER_MODE,
+        NFTCoreError::MissingIdentifierMode,
+        NFTCoreError::InvalidIdentifierMode,
+    )
+        .try_into()
+        .unwrap_or_revert();
+    let token_identifier = utils::get_token_identifier_from_runtime_args(&identifier_mode);
+    let latest_event = events::get_latest_token_event(token_identifier);
+    let receipt_name = utils::get_stored_value_with_user_errors::<String>(
+        RECEIPT_NAME,
+        NFTCoreError::MissingReceiptName,
+        NFTCoreError::InvalidReceiptName,
+    );
+    runtime::ret(CLValue::from_t((format!("events-{}", receipt_name), latest_event)).unwrap_or_revert_with(NFTCoreError::FailedToConvertToCLValue))
+}
+
 fn install_nft_contract() -> (ContractHash, ContractVersion) {
     let entry_points = {
         let mut entry_points = EntryPoints::new();
@@ -1511,6 +1530,14 @@ fn install_nft_contract() -> (ContractHash, ContractVersion) {
             EntryPointType::Contract
         );
 
+        let get_latest_token_event = EntryPoint::new(
+            ENTRY_POINT_GET_LATEST_TOKEN_EVENT,
+            vec![],
+            CLType::String,
+            EntryPointAccess::Public,
+            EntryPointType::Contract
+        );
+
         entry_points.add_entry_point(init_contract);
         entry_points.add_entry_point(set_variables);
         entry_points.add_entry_point(mint);
@@ -1524,6 +1551,7 @@ fn install_nft_contract() -> (ContractHash, ContractVersion) {
         entry_points.add_entry_point(set_approval_for_all);
         entry_points.add_entry_point(set_token_metadata);
         entry_points.add_entry_point(get_token_events);
+        entry_points.add_entry_point(get_latest_token_event);
         entry_points
     };
 

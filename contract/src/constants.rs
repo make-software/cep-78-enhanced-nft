@@ -74,3 +74,4 @@ pub const ENTRY_POINT_METADATA: &str = "metadata";
 pub const ENTRY_POINT_SET_APPROVE_FOR_ALL: &str = "set_approval_for_all";
 pub const ENTRY_POINT_SET_TOKEN_METADATA: &str = "set_token_metadata";
 pub const ENTRY_POINT_GET_TOKEN_EVENTS: &str = "get_token_events";
+pub const ENTRY_POINT_GET_LATEST_TOKEN_EVENT: &str = "get_latest_token_event";
