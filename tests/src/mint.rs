@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 use casper_engine_test_support::{
@@ -191,9 +193,12 @@ fn should_mint() {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST).commit();
 
+    let mut metadata_kinds = BTreeMap::new();
+    metadata_kinds.insert(NFTMetadataKind::CEP78 as u8, 0u8);
+
     let install_request_builder =
         InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
-            .with_nft_metadata_kind(NFTMetadataKind::CEP78)
+            .with_nft_metadata_kind(metadata_kinds)
             .with_total_token_supply(2u64);
     builder
         .exec(install_request_builder.build())
@@ -1141,9 +1146,12 @@ fn should_mint_with_valid_cep99_metadata() {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST).commit();
 
+    let mut metadata_kinds = BTreeMap::new();
+    metadata_kinds.insert(NFTMetadataKind::CEP78 as u8, 0u8);
+
     let install_request = InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
         .with_total_token_supply(2u64)
-        .with_nft_metadata_kind(NFTMetadataKind::CEP78)
+        .with_nft_metadata_kind(metadata_kinds)
         .build();
 
     builder.exec(install_request).expect_success().commit();
@@ -1181,9 +1189,12 @@ fn should_mint_with_custom_metadata_validation() {
     let custom_json_schema =
         serde_json::to_string(&*TEST_CUSTOM_METADATA_SCHEMA).expect("must convert to json schema");
 
+    let mut metadata_kinds = BTreeMap::new();
+    metadata_kinds.insert(NFTMetadataKind::CustomValidated as u8, 0u8);
+
     let install_request = InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
         .with_total_token_supply(2u64)
-        .with_nft_metadata_kind(NFTMetadataKind::CustomValidated)
+        .with_nft_metadata_kind(metadata_kinds)
         .with_json_schema(custom_json_schema)
         .build();
 
@@ -1226,9 +1237,12 @@ fn should_mint_with_raw_metadata() {
     let mut builder = InMemoryWasmTestBuilder::default();
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST).commit();
 
+    let mut metadata_kinds = BTreeMap::new();
+    metadata_kinds.insert(NFTMetadataKind::Raw as u8, 0u8);
+
     let install_request = InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
         .with_total_token_supply(2u64)
-        .with_nft_metadata_kind(NFTMetadataKind::Raw)
+        .with_nft_metadata_kind(metadata_kinds)
         .build();
 
     builder.exec(install_request).expect_success().commit();
