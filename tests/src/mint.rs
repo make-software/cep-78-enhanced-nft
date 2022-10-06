@@ -207,6 +207,9 @@ fn should_mint() {
 
     let nft_contract_key: Key = get_nft_contract_hash(&builder).into();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::CEP78 as u8, TEST_PRETTY_CEP78_METADATA.to_string());
+    
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
@@ -214,7 +217,7 @@ fn should_mint() {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
 
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_CEP78_METADATA,
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -1202,15 +1205,14 @@ fn should_mint_with_custom_metadata_validation() {
 
     let nft_contract_key: Key = get_nft_contract_hash(&builder).into();
 
-    let custom_metadata =
-        serde_json::to_string(&*TEST_CUSTOM_METADATA).expect("must convert to json metadata");
+    let mut custom_metadata = BTreeMap::new();
+    custom_metadata.insert(NFTMetadataKind::CustomValidated as u8,serde_json::to_string(&*TEST_CUSTOM_METADATA).expect("must convert to json metadata"));
 
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
-
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
             ARG_TOKEN_META_DATA => custom_metadata ,
         },

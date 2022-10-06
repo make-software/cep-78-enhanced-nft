@@ -1396,7 +1396,7 @@ fn install_nft_contract() -> (ContractHash, ContractVersion) {
             ENTRY_POINT_MINT,
             vec![
                 Parameter::new(ARG_TOKEN_OWNER, CLType::Key),
-                Parameter::new(ARG_TOKEN_META_DATA, CLType::String),
+                Parameter::new(ARG_TOKEN_META_DATA, CLType::Map { key: Box::new(CLType::U8), value: Box::new(CLType::String) }),
             ],
             CLType::Tuple3([
                 Box::new(CLType::String),
