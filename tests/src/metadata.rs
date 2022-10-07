@@ -46,13 +46,16 @@ fn should_prevent_update_in_immutable_mode() {
 
     let nft_contract_key: Key = support::get_nft_contract_hash(&builder).into();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_token_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -60,7 +63,10 @@ fn should_prevent_update_in_immutable_mode() {
     builder.exec(mint_token_request).expect_success().commit();
 
     let token_hash: String =
-        base16::encode_lower(&support::create_blake2b_hash(&TEST_PRETTY_721_META_DATA));
+        base16::encode_lower(&support::create_blake2b_hash(&format!("{}{}",NFTMetadataKind::NFT721 as u8,TEST_PRETTY_721_META_DATA)));
+
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_UPDATED_721_META_DATA.to_string());
 
     let update_token_metadata_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
@@ -68,7 +74,7 @@ fn should_prevent_update_in_immutable_mode() {
         ENTRY_POINT_SET_TOKEN_METADATA,
         runtime_args! {
             ARG_TOKEN_HASH => token_hash,
-            ARG_TOKEN_META_DATA => TEST_PRETTY_UPDATED_721_META_DATA
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -121,13 +127,16 @@ fn should_prevent_update_for_invalid_metadata() {
 
     let nft_contract_key: Key = support::get_nft_contract_hash(&builder).into();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_token_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -143,13 +152,16 @@ fn should_prevent_update_for_invalid_metadata() {
 
     assert_eq!(TEST_PRETTY_721_META_DATA, original_metadata);
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, MALFORMED_META_DATA.to_string());
+
     let update_token_metadata_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         support::get_nft_contract_hash(&builder),
         ENTRY_POINT_SET_TOKEN_METADATA,
         runtime_args! {
             ARG_TOKEN_ID => 0u64,
-            ARG_TOKEN_META_DATA => MALFORMED_META_DATA
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -163,7 +175,7 @@ fn should_prevent_metadata_update_by_non_owner_key() {
     builder.run_genesis(&DEFAULT_RUN_GENESIS_REQUEST).commit();
 
     let mut metadata_kinds = BTreeMap::new();
-    metadata_kinds.insert(NFTMetadataKind::CEP78 as u8, 0u8);
+    metadata_kinds.insert(NFTMetadataKind::NFT721 as u8, 0u8);
 
     let install_request = InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
         .with_total_token_supply(10u64)
@@ -179,13 +191,16 @@ fn should_prevent_metadata_update_by_non_owner_key() {
 
     let nft_owner_account_key = Key::Account(AccountHash::new([4u8; 32]));
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_token_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => nft_owner_account_key,
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -210,13 +225,16 @@ fn should_prevent_metadata_update_by_non_owner_key() {
 
     assert_eq!(token_owner_key, nft_owner_account_key);
 
+    let mut updated_metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    updated_metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_UPDATED_721_META_DATA.to_string());
+           
     let update_token_metadata_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
         support::get_nft_contract_hash(&builder),
         ENTRY_POINT_SET_TOKEN_METADATA,
         runtime_args! {
             ARG_TOKEN_ID => 0u64,
-            ARG_TOKEN_META_DATA => TEST_PRETTY_UPDATED_721_META_DATA
+            ARG_TOKEN_META_DATA => updated_metadatas
         },
     )
     .build();
@@ -264,13 +282,16 @@ fn should_allow_update_for_valid_metadata_based_on_kind(
         NFTMetadataKind::CustomValidated => &custom_metadata,
     };
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(nft_metadata_kind as u8, original_metadata.to_string());
+
     let mint_request = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => original_metadata.to_string()
+            ARG_TOKEN_META_DATA => metadatas
         },
     )
     .build();
@@ -295,7 +316,7 @@ fn should_allow_update_for_valid_metadata_based_on_kind(
             &builder,
             &nft_contract_key,
             dictionary_name,
-            &base16::encode_lower(&support::create_blake2b_hash(original_metadata)),
+            &base16::encode_lower(&support::create_blake2b_hash(format!("{}{}", nft_metadata_kind as u8,original_metadata))),
         ),
     };
 
@@ -311,16 +332,19 @@ fn should_allow_update_for_valid_metadata_based_on_kind(
         NFTMetadataKind::CustomValidated => &custom_updated_metadata,
     };
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(nft_metadata_kind as u8, updated_metadata.to_string());
+
     let update_metadata_runtime_args = {
         let mut args = runtime_args! {
-            ARG_TOKEN_META_DATA => updated_metadata.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         };
         match identifier_mode {
             NFTIdentifierMode::Ordinal => args.insert(ARG_TOKEN_ID, 0u64).expect("must get args"),
             NFTIdentifierMode::Hash => args
                 .insert(
                     ARG_TOKEN_HASH,
-                    base16::encode_lower(&support::create_blake2b_hash(original_metadata)),
+                    base16::encode_lower(&support::create_blake2b_hash(format!("{}{}",nft_metadata_kind as u8,original_metadata))),
                 )
                 .expect("must get args"),
         }
@@ -351,7 +375,7 @@ fn should_allow_update_for_valid_metadata_based_on_kind(
             &builder,
             &nft_contract_key,
             dictionary_name,
-            &base16::encode_lower(&support::create_blake2b_hash(original_metadata)),
+            &base16::encode_lower(&support::create_blake2b_hash(format!("{}{}",nft_metadata_kind as u8,original_metadata))),
         ),
     };
 
@@ -425,10 +449,13 @@ fn should_get_metadata_using_token_id() {
 
     assert_eq!(actual_contract_whitelist, contract_whitelist);
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_runtime_args = runtime_args! {
         ARG_NFT_CONTRACT_HASH => nft_contract_key,
         ARG_TOKEN_OWNER => minting_contract_key,
-        ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+        ARG_TOKEN_META_DATA => metadatas,
     };
 
     let minting_request = ExecuteRequestBuilder::contract_call_by_hash(

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use casper_engine_test_support::{
     ExecuteRequestBuilder, InMemoryWasmTestBuilder, DEFAULT_ACCOUNT_ADDR,
     DEFAULT_RUN_GENESIS_REQUEST,
@@ -16,7 +18,7 @@ use crate::utility::{
     },
     installer_request_builder::{
         BurnMode, InstallerRequestBuilder, MetadataMutability, MintingMode, NFTHolderMode,
-        NFTIdentifierMode, OwnershipMode, WhitelistMode,
+        NFTIdentifierMode, OwnershipMode, WhitelistMode, NFTMetadataKind,
     },
     support::{
         self, get_dictionary_value_from_key, get_minting_contract_hash, get_nft_contract_hash,
@@ -47,6 +49,8 @@ fn should_burn_minted_token() {
         .expect("must have key in named keys");
 
     let nft_contract_hash = get_nft_contract_hash(&builder);
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
 
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
@@ -54,7 +58,7 @@ fn should_burn_minted_token() {
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => Key::Hash(nft_contract_hash.value()),
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -133,6 +137,9 @@ fn should_not_burn_previously_burnt_token() {
         .get(CONTRACT_NAME)
         .expect("must have key in named keys");
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let nft_contract_hash = get_nft_contract_hash(&builder);
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
@@ -141,7 +148,7 @@ fn should_not_burn_previously_burnt_token() {
             ARG_NFT_CONTRACT_HASH => Key::Hash(nft_contract_hash.value()),
 
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -268,6 +275,9 @@ fn should_return_expected_error_burning_of_others_users_token() {
         .expect_success()
         .commit();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
@@ -275,7 +285,7 @@ fn should_return_expected_error_burning_of_others_users_token() {
             ARG_NFT_CONTRACT_HASH => Key::Hash(nft_contract_hash),
 
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -351,6 +361,9 @@ fn should_return_expected_error_when_burning_not_owned_token() {
         .expect_success()
         .commit();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+           
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
@@ -358,7 +371,7 @@ fn should_return_expected_error_when_burning_not_owned_token() {
             ARG_NFT_CONTRACT_HASH => Key::Hash(nft_contract_hash),
 
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -428,10 +441,13 @@ fn should_allow_contract_to_burn_token() {
 
     let nft_contract_key: Key = get_nft_contract_hash(&builder).into();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_runtime_args = runtime_args! {
         ARG_NFT_CONTRACT_HASH => nft_contract_key,
         ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-        ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+        ARG_TOKEN_META_DATA => metadatas,
     };
 
     let mint_via_contract_call = ExecuteRequestBuilder::contract_call_by_hash(
@@ -507,13 +523,16 @@ fn should_not_burn_in_non_burn_mode() {
 
     assert_eq!(burn_mode, BurnMode::NonBurnable as u8);
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+            ARG_TOKEN_META_DATA => metadatas,
         },
     )
     .build();
@@ -551,6 +570,9 @@ fn should_check_for_burnt_tokens_during_approve_all() {
     let nft_contract_hash = get_nft_contract_hash(&builder);
     let nft_contract_key: Key = nft_contract_hash.into();
 
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
     for _ in 0..3 {
         let mint_session_call = ExecuteRequestBuilder::standard(
             *DEFAULT_ACCOUNT_ADDR,
@@ -558,7 +580,7 @@ fn should_check_for_burnt_tokens_during_approve_all() {
             runtime_args! {
                 ARG_NFT_CONTRACT_HASH => nft_contract_key,
                 ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-                ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA.to_string(),
+                ARG_TOKEN_META_DATA => metadatas.clone(),
             },
         )
         .build();
@@ -615,13 +637,18 @@ fn should_burn_token_in_hash_identifier_mode() {
     let nft_contract_hash = get_nft_contract_hash(&builder);
     let nft_contract_key: Key = nft_contract_hash.into();
 
+
+    let mut metadatas: BTreeMap<u8, String> = BTreeMap::new();
+    metadatas.insert(NFTMetadataKind::NFT721 as u8, TEST_PRETTY_721_META_DATA.to_string());
+
+
     let mint_session_call = ExecuteRequestBuilder::standard(
         *DEFAULT_ACCOUNT_ADDR,
         MINT_SESSION_WASM,
         runtime_args! {
             ARG_NFT_CONTRACT_HASH => nft_contract_key,
             ARG_TOKEN_OWNER => Key::Account(*DEFAULT_ACCOUNT_ADDR),
-            ARG_TOKEN_META_DATA => TEST_PRETTY_721_META_DATA ,
+            ARG_TOKEN_META_DATA => metadatas ,
         },
     )
     .build();
@@ -629,7 +656,7 @@ fn should_burn_token_in_hash_identifier_mode() {
     builder.exec(mint_session_call).expect_success().commit();
 
     let token_hash: String =
-        base16::encode_lower(&support::create_blake2b_hash(&TEST_PRETTY_721_META_DATA));
+        base16::encode_lower(&support::create_blake2b_hash(&format!("{}{}",NFTMetadataKind::NFT721 as u8,TEST_PRETTY_721_META_DATA)));
 
     let burn_request = ExecuteRequestBuilder::contract_call_by_hash(
         *DEFAULT_ACCOUNT_ADDR,
