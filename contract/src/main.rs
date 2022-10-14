@@ -476,12 +476,12 @@ pub extern "C" fn mint() {
         NFTIdentifierMode::Ordinal => TokenIdentifier::Index(next_index),
         NFTIdentifierMode::Hash => {
             TokenIdentifier::Hash(base16::encode_lower(&runtime::blake2b({
-                let mut fake_feline = String::new();
+                let mut ident = String::new();
                 for (kind, meta) in &token_metadatas {
-                    fake_feline.push_str(&kind.to_string());
-                    fake_feline.push_str(meta);
+                    ident.push_str(&kind.to_string());
+                    ident.push_str(meta);
                 }
-                fake_feline
+                ident
             })))
         }
     };
