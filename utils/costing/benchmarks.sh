@@ -15,7 +15,7 @@ TOKEN_MINT_DEPLOY=$(casper-client put-deploy\
         --session-path $MINT_WASM\
         --session-arg "nft_contract_hash:key='$TOKEN_CONTRACT_HASH'"\
         --session-arg "token_owner:key='$USER_1_ACCOUNT'"\
-        --session-arg "token_meta_data:string=''"\
+        --session-arg "token_meta_data:string='{\"name\": \"John Doe\",\"token_uri\": \"https:\/\/www.barfoo.com\",\"checksum\": \"940bffb3f2bba35f84313aa26da09ece3ad47045c6a1292c2bbd2df4ab1a55fb\"}'"\
         | jq .result.deploy_hash\
         | tr -d '"')
 
@@ -31,6 +31,7 @@ TOKEN_TRANSFER_DEPLOY=$(casper-client put-deploy\
         --session-arg "token_id:u64='0'"\
         --session-arg "target_key:key='$USER_2_ACCOUNT'"\
         --session-arg "source_key:key='$USER_1_ACCOUNT'"\
+        --session-arg "is_hash_identifier_mode:bool='false'"\
         | jq .result.deploy_hash\
         | tr -d '"')
 

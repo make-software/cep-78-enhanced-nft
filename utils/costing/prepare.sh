@@ -1,9 +1,10 @@
 #!/bin/bash
 
-rm cep78-cost-benchmarking-output
+#rm cep78-cost-benchmarking-output
 
 # Filename annotation
-ANNOTATION="normal"
+#ANNOTATION="normal"
+ANNOTATION="zero-storage-cost"
 
 # NCTL config
 NETWORK_NAME=casper-net-1
