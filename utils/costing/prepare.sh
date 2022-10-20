@@ -2,6 +2,9 @@
 
 rm cep78-cost-benchmarking-output
 
+# Filename annotation
+ANNOTATION="normal"
+
 # NCTL config
 NETWORK_NAME=casper-net-1
 NODE_1_RPC_PORT=11101
@@ -22,10 +25,23 @@ METADATA_SCHEMA=""
 TOKEN_IDENTIFIER=0
 METADATA_MUTABILITY=0
 
+# Client code paths
+MINT_WASM=client/mint_session/target/wasm32-unknown-unknown/release/mint_call.wasm
+TRANSFER_WASM=client/transfer_session/target/wasm32-unknown-unknown/release/transfer_call.wasm
+
 # Make sure our token wasm exists
 cd contract &&\
 cargo build --release --target wasm32-unknown-unknown -p contract &&\
 cd ..
+
+# Make sure client session code also exists
+cd client/mint_session &&\
+cargo build --release --target wasm32-unknown-unknown -p mint_session &&\
+cd ../..
+
+cd client/transfer_session &&\
+cargo build --release --target wasm32-unknown-unknown -p transfer_session &&\
+cd ../..
 
 # Install the token
 TOKEN_INSTALL_DEPLOY=$(casper-client put-deploy\
@@ -48,13 +64,11 @@ TOKEN_INSTALL_DEPLOY=$(casper-client put-deploy\
 
 sleep 90
 
-###
-
 # Recover contract hash
 TOKEN_CONTRACT_HASH=$(nctl-view-user-account user=1\
   | tr -d "\n"\
   | grep -o  "{.*"\
-  | jq '.stored_value.Account.named_keys[] | select(.name == "erc20_token_contract") | .key'\
+  | jq '.stored_value.Account.named_keys[] | select(.name == "nft_contract") | .key'\
   | tr -d '"')
 
 # Recover install cost
@@ -62,4 +76,4 @@ INSTALL_COST=$(nctl-view-chain-deploy deploy=$TOKEN_INSTALL_DEPLOY\
                 | jq .execution_results[0].result.Success.cost\
                 | tr -d '"')
 
-echo INSTALLATION, $INSTALL_COST >> erc20-cost-benchmarking-output
+echo INSTALLATION, $ANNOTATION, $INSTALL_COST >> cep78-cost-benchmarking-output
