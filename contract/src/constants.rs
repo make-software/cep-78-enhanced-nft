@@ -22,6 +22,8 @@ pub const ARG_NFT_METADATA_KIND: &str = "nft_metadata_kind";
 pub const ARG_IDENTIFIER_MODE: &str = "identifier_mode";
 pub const ARG_METADATA_MUTABILITY: &str = "metadata_mutability";
 pub const ARG_BURN_MODE: &str = "burn_mode";
+pub const ARG_ADDITIONAL_REQUIRED_METADATA: &str = "additional_required_metadata";
+pub const ARG_OPTIONAL_METADATA: &str = "optional_metadata";
 
 pub const OPERATOR: &str = "operator";
 pub const NUMBER_OF_MINTED_TOKENS: &str = "number_of_minted_tokens";

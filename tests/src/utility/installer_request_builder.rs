@@ -5,13 +5,14 @@ use serde::{Deserialize, Serialize};
 
 use casper_engine_test_support::ExecuteRequestBuilder;
 use casper_execution_engine::core::engine_state::ExecuteRequest;
-use casper_types::{account::AccountHash, CLValue, ContractHash, RuntimeArgs};
+use casper_types::{account::AccountHash, bytesrepr::Bytes, CLValue, ContractHash, RuntimeArgs};
 
 use crate::utility::constants::{
-    ARG_ALLOW_MINTING, ARG_BURN_MODE, ARG_COLLECTION_NAME, ARG_COLLECTION_SYMBOL,
-    ARG_CONTRACT_WHITELIST, ARG_HOLDER_MODE, ARG_IDENTIFIER_MODE, ARG_JSON_SCHEMA,
-    ARG_METADATA_MUTABILITY, ARG_MINTING_MODE, ARG_NFT_KIND, ARG_NFT_METADATA_KIND,
-    ARG_OWNERSHIP_MODE, ARG_TOTAL_TOKEN_SUPPLY, ARG_WHITELIST_MODE,
+    ARG_ADDITIONAL_REQUIRED_METADATA, ARG_ALLOW_MINTING, ARG_BURN_MODE, ARG_COLLECTION_NAME,
+    ARG_COLLECTION_SYMBOL, ARG_CONTRACT_WHITELIST, ARG_HOLDER_MODE, ARG_IDENTIFIER_MODE,
+    ARG_JSON_SCHEMA, ARG_METADATA_MUTABILITY, ARG_MINTING_MODE, ARG_NFT_KIND,
+    ARG_NFT_METADATA_KIND, ARG_OPTIONAL_METADATA, ARG_OWNERSHIP_MODE, ARG_TOTAL_TOKEN_SUPPLY,
+    ARG_WHITELIST_MODE,
 };
 
 pub(crate) static TEST_CUSTOM_METADATA_SCHEMA: Lazy<CustomMetadataSchema> = Lazy::new(|| {
@@ -153,6 +154,8 @@ pub(crate) struct InstallerRequestBuilder {
     identifier_mode: CLValue,
     metadata_mutability: CLValue,
     burn_mode: CLValue,
+    additional_required_metadata: CLValue,
+    optional_metadata: CLValue,
 }
 
 impl InstallerRequestBuilder {
@@ -178,15 +181,12 @@ impl InstallerRequestBuilder {
             contract_whitelist: CLValue::from_t(Vec::<ContractHash>::new()).unwrap(),
             json_schema: CLValue::from_t("test".to_string())
                 .expect("test_metadata was created from a concrete value"),
-            nft_metadata_kind: CLValue::from_t({
-                let mut metadata_kinds = BTreeMap::new();
-                metadata_kinds.insert(NFTMetadataKind::NFT721 as u8, 0u8);
-                metadata_kinds
-            })
-            .unwrap(),
+            nft_metadata_kind: CLValue::from_t(NFTMetadataKind::NFT721 as u8).unwrap(),
             identifier_mode: CLValue::from_t(NFTIdentifierMode::Ordinal as u8).unwrap(),
             metadata_mutability: CLValue::from_t(MetadataMutability::Mutable as u8).unwrap(),
             burn_mode: CLValue::from_t(BurnMode::Burnable as u8).unwrap(),
+            additional_required_metadata: CLValue::from_t(Bytes::new()).unwrap(),
+            optional_metadata: CLValue::from_t(Bytes::new()).unwrap(),
         }
     }
 
@@ -265,8 +265,22 @@ impl InstallerRequestBuilder {
         self
     }
 
-    pub(crate) fn with_nft_metadata_kind(mut self, nft_metadata_kind: BTreeMap<u8, u8>) -> Self {
+    pub(crate) fn with_nft_metadata_kind(mut self, nft_metadata_kind: u8) -> Self {
         self.nft_metadata_kind = CLValue::from_t(nft_metadata_kind).unwrap();
+        self
+    }
+
+    pub(crate) fn with_additional_required_metadata(
+        mut self,
+        additional_required_metadata: Vec<u8>,
+    ) -> Self {
+        self.additional_required_metadata =
+            CLValue::from_t(Bytes::from(additional_required_metadata)).unwrap();
+        self
+    }
+
+    pub(crate) fn with_optional_metadata(mut self, optional_metadata: Vec<u8>) -> Self {
+        self.optional_metadata = CLValue::from_t(Bytes::from(optional_metadata)).unwrap();
         self
     }
 
@@ -310,6 +324,11 @@ impl InstallerRequestBuilder {
         runtime_args.insert_cl_value(ARG_IDENTIFIER_MODE, self.identifier_mode);
         runtime_args.insert_cl_value(ARG_METADATA_MUTABILITY, self.metadata_mutability);
         runtime_args.insert_cl_value(ARG_BURN_MODE, self.burn_mode);
+        runtime_args.insert_cl_value(
+            ARG_ADDITIONAL_REQUIRED_METADATA,
+            self.additional_required_metadata,
+        );
+        runtime_args.insert_cl_value(ARG_OPTIONAL_METADATA, self.optional_metadata);
         ExecuteRequestBuilder::standard(self.account_hash, &self.session_file, runtime_args).build()
     }
 }

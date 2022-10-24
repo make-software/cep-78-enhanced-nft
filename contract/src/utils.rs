@@ -22,7 +22,10 @@ use casper_types::{
 use crate::{
     constants::{ARG_TOKEN_HASH, ARG_TOKEN_ID, HOLDER_MODE, OWNED_TOKENS, OWNERSHIP_MODE},
     error::NFTCoreError,
-    modalities::{NFTHolderMode, NFTIdentifierMode, OwnershipMode, TokenIdentifier},
+    modalities::{
+        MetadataRequirement, NFTHolderMode, NFTIdentifierMode, NFTMetadataKind, OwnershipMode,
+        Requirement, TokenIdentifier,
+    },
     BurnMode, BURNT_TOKENS, BURN_MODE,
 };
 
@@ -389,4 +392,26 @@ pub(crate) fn get_burn_mode() -> BurnMode {
 pub(crate) fn is_token_burned(token_identifier: &TokenIdentifier) -> bool {
     get_dictionary_value_from_key::<()>(BURNT_TOKENS, &token_identifier.get_dictionary_item_key())
         .is_some()
+}
+
+pub(crate) fn create_metadata_requirements(
+    base: NFTMetadataKind,
+    req: Vec<u8>,
+    opt: Vec<u8>,
+) -> MetadataRequirement {
+    let mut metadata_requirements = MetadataRequirement::new();
+    for optional in opt {
+        metadata_requirements.insert(
+            optional.try_into().unwrap_or_revert(),
+            Requirement::Optional,
+        );
+    }
+    for required in req {
+        metadata_requirements.insert(
+            required.try_into().unwrap_or_revert(),
+            Requirement::Required,
+        );
+    }
+    metadata_requirements.insert(base, Requirement::Required);
+    metadata_requirements
 }

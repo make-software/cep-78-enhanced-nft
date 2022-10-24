@@ -7,7 +7,6 @@ compile_error!("target arch should be wasm32: compile with '--target wasm32-unkn
 extern crate alloc;
 
 use alloc::string::String;
-use alloc::collections::BTreeMap;
 
 use casper_contract::contract_api::{runtime};
 use casper_types::{runtime_args, ContractHash, Key, RuntimeArgs};
@@ -27,7 +26,7 @@ pub extern "C" fn call() {
         .unwrap();
 
     let token_owner = runtime::get_named_arg::<Key>(ARG_TOKEN_OWNER);
-    let token_metadata: BTreeMap<u8,String> = runtime::get_named_arg(ARG_TOKEN_META_DATA);
+    let token_metadata: String = runtime::get_named_arg(ARG_TOKEN_META_DATA);
 
     let (receipt_name, owned_tokens_dictionary_key, _token_id_string) = runtime::call_contract::<(String, Key, String)>(
         nft_contract_hash,
