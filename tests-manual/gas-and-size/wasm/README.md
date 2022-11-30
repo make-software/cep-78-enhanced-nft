@@ -1,0 +1,1 @@
+Expects contract.wasm in this directory.
