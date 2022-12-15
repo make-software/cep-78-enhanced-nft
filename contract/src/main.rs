@@ -20,11 +20,12 @@ use alloc::{
     vec::Vec,
 };
 use core::convert::TryInto;
+use utils::Caller;
 
 use casper_types::{
     contracts::NamedKeys, runtime_args, CLType, CLValue, ContractHash, ContractPackageHash,
-    ContractVersion, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key, KeyTag,
-    Parameter, RuntimeArgs, Tagged,
+    ContractVersion, EntryPoint, EntryPointAccess, EntryPointType, EntryPoints, Key, Parameter,
+    RuntimeArgs,
 };
 
 use casper_contract::{
@@ -412,12 +413,8 @@ pub extern "C" fn mint() {
     // Revert if minting is private and caller is not installer.
     if let MintingMode::Installer = minting_mode {
         let caller = utils::get_verified_caller().unwrap_or_revert();
-        match caller.tag() {
-            KeyTag::Hash => {
-                let calling_contract = caller
-                    .into_hash()
-                    .map(ContractHash::new)
-                    .unwrap_or_revert_with(NFTCoreError::InvalidKey);
+        match caller {
+            Caller::StoredCaller(calling_contract, _) => {
                 let contract_whitelist =
                     utils::get_stored_value_with_user_errors::<Vec<ContractHash>>(
                         CONTRACT_WHITELIST,
@@ -429,7 +426,7 @@ pub extern "C" fn mint() {
                     runtime::revert(NFTCoreError::UnlistedContractHash)
                 }
             }
-            KeyTag::Account => {
+            Caller::Session(_) => {
                 let installer_account = runtime::get_key(INSTALLER)
                     .unwrap_or_revert_with(NFTCoreError::MissingInstallerKey)
                     .into_account()
@@ -440,7 +437,6 @@ pub extern "C" fn mint() {
                     runtime::revert(NFTCoreError::InvalidMinter)
                 }
             }
-            _ => runtime::revert(NFTCoreError::InvalidKey),
         }
     }
 
@@ -452,7 +448,10 @@ pub extern "C" fn mint() {
         if let OwnershipMode::Assigned | OwnershipMode::Transferable = ownership_mode {
             runtime::get_named_arg(ARG_TOKEN_OWNER)
         } else {
-            caller
+            match caller {
+                Caller::Session(caller_account) => caller_account.into(),
+                Caller::StoredCaller(caller_contract, _) => caller_contract.into(),
+            }
         };
 
     let metadata_kind: NFTMetadataKind = utils::get_stored_value_with_user_errors::<u8>(
@@ -619,7 +618,10 @@ pub extern "C" fn burn() {
 
     let token_identifier = utils::get_token_identifier_from_runtime_args(&identifier_mode);
 
-    let expected_token_owner: Key = utils::get_verified_caller().unwrap_or_revert();
+    let expected_token_owner: Key = match utils::get_verified_caller().unwrap_or_revert() {
+        Caller::Session(account_hash) => account_hash.into(),
+        Caller::StoredCaller(contract_hash, _) => contract_hash.into(),
+    };
 
     // Revert if caller is not token_owner. This seems to be the only check we need to do.
     let token_owner = match utils::get_dictionary_value_from_key::<Key>(
@@ -681,7 +683,10 @@ pub extern "C" fn approve() {
         runtime::revert(NFTCoreError::InvalidOwnershipMode)
     }
 
-    let caller: Key = utils::get_verified_caller().unwrap_or_revert();
+    let caller: Key = match utils::get_verified_caller().unwrap_or_revert() {
+        Caller::Session(account_hash) => account_hash.into(),
+        Caller::StoredCaller(contract_hash, _) => contract_hash.into(),
+    };
 
     let identifier_mode: NFTIdentifierMode = utils::get_stored_value_with_user_errors::<u8>(
         IDENTIFIER_MODE,
@@ -843,7 +848,10 @@ pub extern "C" fn transfer() {
         runtime::revert(NFTCoreError::InvalidAccount);
     }
 
-    let caller = utils::get_verified_caller().unwrap_or_revert();
+    let caller: Key = match utils::get_verified_caller().unwrap_or_revert() {
+        Caller::Session(account_hash) => account_hash.into(),
+        Caller::StoredCaller(contract_hash, _) => contract_hash.into(),
+    };
 
     // Check if caller is approved to execute transfer
     let is_approved = match utils::get_dictionary_value_from_key::<Option<Key>>(
@@ -1207,7 +1215,10 @@ pub extern "C" fn set_token_metadata() {
     );
 
     if let Some(token_owner_key) = token_owner {
-        let caller = utils::get_verified_caller().unwrap_or_revert();
+        let caller: Key = match utils::get_verified_caller().unwrap_or_revert() {
+            Caller::Session(account_hash) => account_hash.into(),
+            Caller::StoredCaller(contract_hash, _) => contract_hash.into(),
+        };
         if caller != token_owner_key {
             runtime::revert(NFTCoreError::InvalidTokenOwner)
         }
@@ -1323,7 +1334,10 @@ pub extern "C" fn migrate() {
 
 #[no_mangle]
 pub extern "C" fn updated_receipts() {
-    let token_owner = utils::get_verified_caller().unwrap_or_revert();
+    let token_owner: Key = match utils::get_verified_caller().unwrap_or_revert() {
+        Caller::Session(account_hash) => account_hash.into(),
+        Caller::StoredCaller(contract_hash, _) => contract_hash.into(),
+    };
 
     let identifier_mode: NFTIdentifierMode = utils::get_stored_value_with_user_errors::<u8>(
         IDENTIFIER_MODE,
