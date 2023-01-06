@@ -604,7 +604,7 @@ fn should_transfer_between_contract_to_account() {
     let minting_contract_hash = get_minting_contract_hash(&builder);
     let minting_contract_key: Key = minting_contract_hash.into();
 
-    let contract_whitelist = vec![minting_contract_hash];
+    let contract_whitelist = vec![minting_contract_hash.into()];
 
     let install_request = InstallerRequestBuilder::new(*DEFAULT_ACCOUNT_ADDR, NFT_CONTRACT_WASM)
         .with_total_token_supply(100u64)
@@ -619,7 +619,7 @@ fn should_transfer_between_contract_to_account() {
 
     let nft_contract_key: Key = get_nft_contract_hash(&builder).into();
 
-    let actual_contract_whitelist: Vec<ContractHash> = query_stored_value(
+    let actual_contract_whitelist: Vec<Key> = query_stored_value(
         &mut builder,
         nft_contract_key,
         vec![ARG_CONTRACT_WHITELIST.to_string()],
