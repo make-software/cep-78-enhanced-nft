@@ -22,8 +22,8 @@ use casper_types::{
 
 use crate::{
     constants::{
-        ARG_TOKEN_HASH, ARG_TOKEN_ID, HOLDER_MODE, OWNERSHIP_MODE, PAGE_DICTIONARY_PREFIX,
-        PAGE_LIMIT, RECEIPT_NAME,
+        ARG_TOKEN_HASH, ARG_TOKEN_ID, CONTRACT_WHITELIST, HOLDER_MODE, OWNERSHIP_MODE,
+        PAGE_DICTIONARY_PREFIX, PAGE_LIMIT, RECEIPT_NAME,
     },
     error::NFTCoreError,
     modalities::{NFTHolderMode, NFTIdentifierMode, OwnershipMode, TokenIdentifier},
@@ -636,6 +636,48 @@ pub(crate) fn migrate_token_hashes(token_owner: Key) {
     );
 
     storage::write(unmatched_hash_count_uref, unmatched_hash_count);
+}
+
+pub(crate) fn should_migrate_contract_whitelist() -> Option<Vec<ContractHash>> {
+    let missing = NFTCoreError::MissingWhitelistMode;
+    let uref = get_uref(
+        CONTRACT_WHITELIST,
+        missing,
+        NFTCoreError::InvalidWhitelistMode,
+    );
+    let key: Key = uref.into();
+    let (key_ptr, key_size, _bytes) = to_ptr(key);
+
+    let value_size = {
+        let mut value_size = MaybeUninit::uninit();
+        let ret = unsafe { ext_ffi::casper_read_value(key_ptr, key_size, value_size.as_mut_ptr()) };
+        match api_error::result_from(ret) {
+            Ok(_) => unsafe { value_size.assume_init() },
+            Err(ApiError::ValueNotFound) => runtime::revert(missing),
+            Err(e) => runtime::revert(e),
+        }
+    };
+
+    let value_bytes = read_host_buffer(value_size).unwrap_or_revert();
+
+    match bytesrepr::deserialize::<Vec<ContractHash>>(value_bytes) {
+        Ok(whitelist) => Some(whitelist),
+        Err(_) => None,
+    }
+}
+
+pub(crate) fn migrate_contract_whitelist(whitelist: Vec<ContractHash>) {
+    let mut contract_key_whitelist: Vec<Key> = Vec::new();
+    for hash in whitelist {
+        contract_key_whitelist.push(hash.into());
+    }
+
+    let whitelist_uref = utils::get_uref(
+        CONTRACT_WHITELIST,
+        NFTCoreError::MissingContractWhiteList,
+        NFTCoreError::InvalidWhitelistMode,
+    );
+    storage::write(whitelist_uref, contract_key_whitelist)
 }
 
 // This function is incredibly gas expensive

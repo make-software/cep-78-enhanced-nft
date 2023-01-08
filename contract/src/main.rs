@@ -1327,6 +1327,10 @@ pub extern "C" fn migrate() {
             );
         }
     }
+
+    if let Some(contract_whitelist) = utils::should_migrate_contract_whitelist() {
+        utils::migrate_contract_whitelist(contract_whitelist);
+    }
 }
 
 #[no_mangle]
